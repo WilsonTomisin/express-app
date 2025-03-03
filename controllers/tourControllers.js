@@ -40,8 +40,8 @@ class APIFeatures{
         this.query = query
         this.queryString = queryString
 
-        this.queryString.page = this.queryString.page ? this.queryString.page * 1 : 1 // NB:Multiplying the query string with one converts the string to a number!
-        this.queryString.limit = this.queryString.limit ? this.queryString.limit * 1 : 3
+        // this.queryString.page = page 
+        // this.queryString.limit = limit
     }
 
     filter(){
@@ -49,26 +49,25 @@ class APIFeatures{
         const queryObj = { ...this.queryString} // make a shallow copy to modify.
         const excParams = ['page', 'sort', 'limit','fields'] // params we do not want included in the request query.
         excParams.forEach(el => delete queryObj[el])
-         
+        
          // Advanced filtering
         let queryString = JSON.stringify(queryObj) // we convert to a string to modify the obj
         queryString = queryString.replace(/\b(gt|gte|lt|lte)\b/g, match => `$${match}`) // this add a dollar sign infront of lt|lte|gt|gte
         
-        console.log('Query String:', this.queryString); // Debugging
-        console.log('Filtered Query Object:', queryObj); 
+        // console.log('Query String:', this.queryString); // Debugging
+        // console.log('Filtered Query Object:', queryObj); 
 
-        // this.query = this.query.find(JSON.parse(queryString));
-        console.log('Final Filters:', JSON.parse(queryString)); // Debugging
+        this.query = this.query.find(JSON.parse(queryString));
+        // console.log('Final Filters:', JSON.parse(queryString)); // Debugging
 
         // If no filters are provided, find all documents
-        if (this.queryString.page) {
-            console.log("this block activated!")
-            this.query = this.query.find();
-            console.log(this.query);
+        // if (Object.keys(JSON.parse(queryString)).length === 0) {
+        //     // console.log("this block activated!")
+        //     this.query = this.query.find();
             
-        } else {
-            this.query = this.query.find(JSON.parse(queryString));
-        }
+        // } else {
+        //     this.query = this.query.find(JSON.parse(queryString));
+        // }
 
         return this ;
     }
@@ -78,10 +77,12 @@ class APIFeatures{
             let sortBy = this.queryString.sort.split(',').join(' ')
             this.query =  this.query.sort(sortBy)
         } 
-        else{
-            this.query =  this.query.sort("-createdAt") // minus at the start of the string sorts the query from the newest to the oldest.
-            // sort query by default sorts from newest to oldest tours
-        }
+        // else{
+        //     this.query =  this.query.sort("-createdAt name") // minus at the start of the string sorts the query from the newest to the oldest.
+        //     // sort query by default sorts from newest to oldest tours
+        // }
+        // NB: Pagination method was dependent on the outcome of the sort method which defaults to sorting the results from newest to oldest tours ( -createdAt), hence why
+        // the pagination method was not skipping as expected. adding (name) to the sort query.Helps arrange in proper order
         return this;
 
     }
@@ -95,29 +96,18 @@ class APIFeatures{
         }
         return this;
     }
-
-    pagination(){
-        if(this.queryString.page){
-            const page = this.queryString.page   // NB:Multiplying the query string with one converts the string to a number!
-            const limit = this.queryString.limit 
-            const skipValue = (page - 1 ) * limit // page 1 skips zero results, page 2 skips the number specified in the limit or 10 by default and soo on...
-            
-            console.log(`Page: ${page}, Limit: ${limit}, Skip: ${skipValue}`); // Debugging
-
-            this.query = this.query.skip(skipValue).limit(limit) 
-        }else{
-            this.query = this.query.skip(0).limit(3) 
-
-        }
-        //skip method recieves a number of results to ignore and limit the number of results to show.
-        // if (this.queryString.page) {
-        //     const noOfTours = await this.query.countDocuments()
-        //     if( skipValue >= noOfTours) throw new error('You have reached the end of the document')
-            
-        // }
-    
-        return this
+    pagination() {
+        const page =  parseInt(this.queryString.page) || 1; // Default to page 1 if not specified
+        const limit = parseInt(this.queryString.limit) || 3; // Use the limit from query or default to 3
+        const skipValue = (page - 1) * limit;
+        
+        console.log(`Page: ${page}, Limit: ${limit}, Skip: ${skipValue}`); // Debugging
+        
+        this.query = this.query.skip(skipValue).limit(limit);
+        
+        return this; 
     }
+
 
 }
 
@@ -126,12 +116,11 @@ exports.getAllTours = async (request,response)=>{
     // defining our return data.
     // its structure --> { status :"success || error|| fail", data:{ ourDataHere}}
     try {
-        let features = new APIFeatures(Tour,request.query).filter().sort().fieldLimit().pagination()
-        let allTours = await features.query // only when have performed all of our methods can we await it's execution.
+        const features = new APIFeatures(Tour.find(),request.query).filter().sort().fieldLimit().pagination()
+        const allTours = await features.query // only when have performed all of our methods can we await it's execution.
 
         console.log('Final Query:', features.query.getQuery()); // Debugging
         const totalTours = await Tour.countDocuments();
-        console.log(`Total Documents: ${totalTours}`); 
 
         response.status(200).json({
             status: 'success',

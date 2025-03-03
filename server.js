@@ -10,9 +10,10 @@ const DB = process.env.DB_HOST.replace("<db_password>", process.env.DB_PASSWORD)
 
 mongoose.connect(DB).then( () =>{
     console.log(`Connected to our database`)
-}).catch( (err)=>{
-    console.log(`An error occured:${err}`)
 })
+// .catch( (err)=>{
+//     console.log(`An error occured:${err}`)
+// })
 
 const PORT = 5500 ;
 app.listen(PORT,()=>{
