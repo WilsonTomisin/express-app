@@ -6,6 +6,7 @@ const {
     createTour,
     deleteTour,
     checkId, 
+    getTourStats,
     validateTourMiddleware,
     aliasTopCheapestFive
 } = require("../controllers/tourControllers");
@@ -19,7 +20,7 @@ const tourRouter = express.Router();
 
 
 tourRouter.route("/best-affordable-five").get( aliasTopCheapestFive, getAllTours)
-
+tourRouter.route("/statistics").get(getTourStats)
 tourRouter.route('/').get(getAllTours).post(
     // validateTourMiddleware,
     createTour )

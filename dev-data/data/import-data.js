@@ -31,7 +31,7 @@ const importData = async()=>{
         console.log(error)
         // return error
     }
-    process.exit() // stop the program from running once excution is completed NB: THIS IS A FORCED METHOD!
+    process.exit() // stop the program from running once execution is completed NB: THIS IS A FORCED METHOD!
 
 }
 const deleteExistingTours = async()=>{
