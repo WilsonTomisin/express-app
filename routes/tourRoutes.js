@@ -7,6 +7,7 @@ const {
     deleteTour,
     checkId, 
     getTourStats,
+    getMonthlyStats,
     validateTourMiddleware,
     aliasTopCheapestFive
 } = require("../controllers/tourControllers");
@@ -21,6 +22,10 @@ const tourRouter = express.Router();
 
 tourRouter.route("/best-affordable-five").get( aliasTopCheapestFive, getAllTours)
 tourRouter.route("/statistics").get(getTourStats)
+tourRouter.route("/monthly-statistics/:year").get(getMonthlyStats)
+
+
+
 tourRouter.route('/').get(getAllTours).post(
     // validateTourMiddleware,
     createTour )

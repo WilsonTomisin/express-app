@@ -91,6 +91,59 @@ exports.getTourStats = async(request,response)=>{
 
 }
 
+exports.getMonthlyStats = async(request,response)=>{
+    const { year } = request.params
+
+    try {
+        const monthlyStats = await Tour.aggregate([
+            {
+                $unwind:"$startDates"
+            },
+            {
+                $match:{
+                    startDates:{
+                        $gte:new Date(`${year}-01-01`),
+                        $lte:new Date(`${year}-12-31`)
+                    }
+                }
+            },
+            {
+                $group:{
+                    _id:{$month:"$startDates"},
+                    numberOfTours:{$sum:1},
+                    listOfTours:{ $push:"$name"} // creates an array of tours available for that month using thier names.
+                }
+            },
+            {
+                $addFields:{ month:"$_id"}
+            },
+            {
+                $project:{_id:0}
+            },
+            {
+                $sort:{numberOfTours:-1} // sorts results in descending order from the month with the most amount of tours to the one with the least.
+            }  
+
+        ])
+        response.status(200).json({
+            status:"success",
+            data:{
+                monthlyStats
+            }
+        })
+        
+    } catch (error) {
+        response.status(404).json({
+            status:"error",
+            error:{
+                message: error.message
+            }
+        })
+        
+    }
+
+}
+
 exports.getTour = async(request,response)=>{
     const { id } = request.params
 
