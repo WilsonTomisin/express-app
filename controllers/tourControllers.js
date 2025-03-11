@@ -1,7 +1,7 @@
 const fs = require('fs')
 const Tour = require("../models/tourModel")
-const APIFeatures = require("../utils/apiFeatures")
-
+const APIFeatures = require("../utils/apiFeatures");
+const catchAsync = require("./../utils/catchAsync")
 
 
 // defining a middleware for our post request on /api/v1/tours
@@ -21,16 +21,18 @@ exports.aliasTopCheapestFive = (request,response,next)=>{
     request.query.limit = '5'
     next()
 }
+// END
 
 
 
 
-exports.getAllTours = async (request,response)=>{
+
+
+exports.getAllTours = catchAsync(async (request,response)=>{
     // we are using the jsend json formatting standard which helps to provide an simple ans consistent way of 
     // defining our return data.
     // its structure --> { status :"success || error|| fail", data:{ ourDataHere}}
-    try {
-        const features = new APIFeatures(Tour.find(),request.query).filter().sort().fieldLimit().pagination()
+    const features = new APIFeatures(Tour.find(),request.query).filter().sort().fieldLimit().pagination()
         const allTours = await features.query // only when have performed all of our methods can we await it's execution.
 
 
@@ -42,20 +44,9 @@ exports.getAllTours = async (request,response)=>{
                 allTours
             }
         })
-    } catch (error) {
-        console.log(error)
-        response.status(400).json({
-            status: 'error',
-            error:{
-                message: "Could not get tours"
-            }
-        })
-    }
+})
 
-}
-
-exports.getTourStats = async(request,response)=>{
-    try {
+exports.getTourStats = catchAsync(async(request,response)=>{
         const tourStats = await Tour.aggregate([
             {$match :{ ratingAvg:{$lte:4.5}}},
             {
@@ -81,151 +72,93 @@ exports.getTourStats = async(request,response)=>{
             }
         })
         
-    } catch (error) {
-        response.status(404).json({
-            status:"error",
-            error:{ message:error.message}
-        })
-        
-    }
+})
 
-}
+exports.getMonthlyStats = catchAsync(async(request,response)=>{
+    const { year } = request.params;
 
-exports.getMonthlyStats = async(request,response)=>{
-    const { year } = request.params
-
-    try {
-        const monthlyStats = await Tour.aggregate([
-            {
-                $unwind:"$startDates"
-            },
-            {
-                $match:{
-                    startDates:{
-                        $gte:new Date(`${year}-01-01`),
-                        $lte:new Date(`${year}-12-31`)
-                    }
+    const monthlyStats = await Tour.aggregate([
+        {
+            $unwind:"$startDates" // unwind creates individual object using the array values
+        },
+        {
+            $match:{
+                startDates:{
+                    $gte:new Date(`${year}-01-01`),
+                    $lte:new Date(`${year}-12-31`)
                 }
-            },
-            {
-                $group:{
-                    _id:{$month:"$startDates"},
-                    numberOfTours:{$sum:1},
-                    listOfTours:{ $push:"$name"} // creates an array of tours available for that month using thier names.
-                }
-            },
-            {
-                $addFields:{ month:"$_id"}
-            },
-            {
-                $project:{_id:0}
-            },
-            {
-                $sort:{numberOfTours:-1} // sorts results in descending order from the month with the most amount of tours to the one with the least.
-            }  
-
-        ])
-        response.status(200).json({
-            status:"success",
-            data:{
-                monthlyStats
             }
-        })
-        
-    } catch (error) {
-        response.status(404).json({
-            status:"error",
-            error:{
-                message: error.message
+        },
+        {
+            $group:{
+                _id:{$month:"$startDates"},
+                numberOfTours:{$sum:1},
+                listOfTours:{ $push:"$name"} // creates an array of tours available for that month using thier names.
             }
-        })
-        
-    }
+        },
+        {
+            $addFields:{ month:"$_id"}
+        },
+        {
+            $project:{_id:0}
+        },
+        {
+            $sort:{numberOfTours:-1} // sorts results in descending order from the month with the most amount of tours to the one with the least.
+        }  
 
-}
+    ])
+    response.status(200).json({
+        status:"success",
+        data:{
+            monthlyStats
+        }
+    })
 
-exports.getTour = async(request,response)=>{
+   
+
+})
+
+exports.getTour = catchAsync(async(request,response)=>{
     const { id } = request.params
-
-    try {
-        const myTour = await Tour.findById(id)
+    const myTour = await Tour.findById(id)
         response.status(200).json({
             status:"success",
             data:{
                 myTour
             }
         })
-        
-    } catch (error) {
-        response.status(404).json({
-            status:"error",
-            error:{
-                message: error.message
-            }
-        })
-        
-    }
     
-}
-exports.createTour = async(request, response)=>{
+})
+exports.createTour = catchAsync(async(request, response)=>{
+    const newTour = await Tour.create(request.body)
 
-    try {
-        const newTour = await Tour.create(request.body)
-
-        await newTour.save()
-        response.status(201).send({
-            status: 'success',
-            data:{
-                newTour    
-            }
-        })
-
-    } catch (error) {
-        if (error.code === 11000) {
-            response.status(400).send({
-                status: 'error',
-                error: error.errorResponse
-           })    
+    await newTour.save()
+    response.status(201).send({
+        status: 'success',
+        data:{
+            newTour    
         }
-        response.status(400).send({
-            status: 'error',
-            error: error.message
-       })   
-    }
-}
-exports.updateTour = (request, response)=>{
-    try {
-        response.status(200).send({
-            status:"Success",
-            data:"<Tour updated...>"
-        })
-        
-    } catch (error) {
-        response.status(200).send({
-            status:"error",
-            error:{
-                message:error.message
-            }    
-        })
-    }
+    })
+
+})
+exports.updateTour = catchAsync(async(request, response)=>{
+    const {id}= request.params
+    const updatedTour = await Tour.findByIdAndUpdate(id,request.body,{
+        runValidators: true, // this ensures that model validators are used to check data bieng updated,
+        new: true
+    }) 
+    response.status(200).send({
+        status:"Success",
+        data:"<Tour updated...>"
+    })
   
-}
+})
 
-exports.deleteTour = async(request,response)=>{
+exports.deleteTour = catchAsync(async(request,response)=>{
     const { id } = request.params;
-    try {
-        await Tour.findByIdAndDelete(id).exec()
-        response.status(200).send({
-            status:"success",
-            message:`Tour ${id} successfully deleted.`
-        })
-    } catch (error) {
-        response.status(400).send({
-            status:'error',
-            message: error
-        })
-        
-    }
- 
-
-}
+    await Tour.findByIdAndDelete(id).exec()
+    response.status(200).send({
+        status:"success",
+        message:`Tour ${id} successfully deleted.`
+    })
+})
