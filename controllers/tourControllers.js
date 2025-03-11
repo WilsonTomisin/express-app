@@ -1,7 +1,8 @@
 const fs = require('fs')
 const Tour = require("../models/tourModel")
 const APIFeatures = require("../utils/apiFeatures");
-const catchAsync = require("./../utils/catchAsync")
+const catchAsync = require("./../utils/catchAsync");
+const AppError = require('../utils/appError');
 
 
 // defining a middleware for our post request on /api/v1/tours
@@ -118,9 +119,12 @@ exports.getMonthlyStats = catchAsync(async(request,response)=>{
 
 })
 
-exports.getTour = catchAsync(async(request,response)=>{
+exports.getTour = catchAsync(async(request,response,next)=>{
     const { id } = request.params
     const myTour = await Tour.findById(id)
+    if (!myTour) {
+        return next(new AppError("Tour was not found", 404))
+    }
         response.status(200).json({
             status:"success",
             data:{
@@ -156,7 +160,11 @@ exports.updateTour = catchAsync(async(request, response)=>{
 
 exports.deleteTour = catchAsync(async(request,response)=>{
     const { id } = request.params;
-    await Tour.findByIdAndDelete(id).exec()
+    const tour =await Tour.findByIdAndDelete(id).exec()
+
+    if (!tour) {
+        return next(new AppError("Tour was not found", 404))
+    }
     response.status(200).send({
         status:"success",
         message:`Tour ${id} successfully deleted.`
