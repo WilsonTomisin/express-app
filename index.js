@@ -22,6 +22,7 @@ app.use(express.json()) // this middleware helps to parse incoming json from our
 
 app.use((request,response,next)=>{
     request.time = new Date().toLocaleString()
+    // console.log(request.headers)
     next()
 })
 // END MIDDLEWARE

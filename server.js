@@ -1,6 +1,11 @@
 const dotenv = require("dotenv")
 dotenv.config({path:"./.env.local"}) // read env file before our app is mounted!
 
+process.on("uncaughtException",err=>{
+    console.log(err.name,err.message)
+    process.exit(1)
+})
+
 const mongoose = require("mongoose")
 const app = require("./index")
 
@@ -16,6 +21,12 @@ mongoose.connect(DB).then( () =>{
 // })
 
 const PORT = 5500 ;
-app.listen(PORT,()=>{
+const server = app.listen(PORT,()=>{
     console.log(`listening on http://localhost:${PORT}... `);
+})
+
+process.on("unhandledRejection",err=>{
+    console.log(err.name,err.message)
+
+    server.close(()=> process.exit(1))
 })

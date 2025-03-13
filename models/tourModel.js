@@ -52,7 +52,7 @@ const tourSchema = new mongoose.Schema({
     summary:{
         type:String,
         trim: true ,  // this removes white-space
-        required:[true, "Included a summary"]
+        required:[true, "A tour must include a summary"]
     },
     description:{
         type:String,
