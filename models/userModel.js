@@ -18,6 +18,11 @@ const userSchema = new mongoose.Schema({
             message:"Provide a valid email address."
         }
     },
+    role:{
+        type:String,
+        enum:["admin", "user","guide","lead-guide"],
+        default:"user"
+    },
     photo:{
         type:String,
     },
@@ -37,7 +42,8 @@ const userSchema = new mongoose.Schema({
             } ,
             message:" '{VALUE}' does not match original password."
         }
-    }
+    },
+    passwordChangedAt: Date
 })
 
 
@@ -54,9 +60,25 @@ userSchema.pre("save",async function(next){
     next()
 })
 
-// In mogoose we can define methods on our SCHEMA (userSchema in this case) class
+// In mongoose we can define methods on our SCHEMA (userSchema in this case) class
 userSchema.methods.correctPassword = async function(candidatePassword, userPassword){
     return await bcrypt.compare(candidatePassword,userPassword)
+}
+
+userSchema.methods.changedPasswordAt = function(JWTtimestamp){
+    // this entire block functions to check if JWTtimeStamp is older than the 
+    // password changed at property
+    if (this.passwordChangedAt) {
+        // mongoose stores dates ax strings .this varaible converts
+        //the string to a number using parseInt(), getTime() converts the date which defaults to milliseconds
+        //we then convert to seconds by dividing by 1000 and we convert to base 10 as the second arg in the 
+        // parseInt function.
+        const timeStamp = parseInt( this.passwordChangedAt.getTime() / 1000 , 10)
+        console.log("Passwordchangedat: "+timeStamp ,"JWT: "+JWTtimestamp)
+        return JWTtimestamp < timeStamp
+    }
+
+    return false
 }
 
 

@@ -25,6 +25,9 @@ const handleValidationError =(err)=>{
     return new AppError(`Invalid data:${message}`,400)
 }
 
+const handleJWTError =()=> new AppError("Invalid token. Please login",401)
+const handleExpiredToken =()=> new AppError("Token has expired",401)
+
 const sendDevErr = (err,res)=>{
     res.status(err.statusCode).json({
         status: err.status,
@@ -63,6 +66,8 @@ module.exports = (err,req,res,next)=>{
         if (copyErr.name === "CastError") copyErr = handleCastError(copyErr)
         if (copyErr.code === 11000) copyErr = handleDuplicateError(copyErr)
         if(copyErr.name === "ValidationError") copyErr = handleValidationError(copyErr)
+        if (copyErr.name === "JsonWebTokenError") copyErr = handleJWTError(copyErr)
+        if (copyErr.name === "TokenExpiredError") copyErr = handleExpiredToken(copyErr)
         
         sendProdErr(copyErr,res)
     }

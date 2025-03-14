@@ -11,7 +11,7 @@ const {
     validateTourMiddleware,
     aliasTopCheapestFive
 } = require("../controllers/tourControllers");
-const { protectRoute }= require("../controllers/authController")
+const { protectRoute, restrictRoute }= require("../controllers/authController")
 
 // console.log(arguments)
 const tourRouter = express.Router();
@@ -30,7 +30,7 @@ tourRouter.route("/monthly-statistics/:year").get(getMonthlyStats)
 tourRouter.route('/').get( protectRoute, getAllTours).post(
     // validateTourMiddleware,
     createTour )
-tourRouter.route('/:id').get(getTour).patch(updateTour).delete(deleteTour)
+tourRouter.route('/:id').get(getTour).patch(updateTour).delete(protectRoute,restrictRoute("admin","lead-guide"),deleteTour)
 
 
 
