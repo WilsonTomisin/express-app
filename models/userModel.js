@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
+const crypto = require("crypto")
 
 const userSchema = new mongoose.Schema({
     name:{
@@ -43,7 +44,10 @@ const userSchema = new mongoose.Schema({
             message:" '{VALUE}' does not match original password."
         }
     },
-    passwordChangedAt: Date
+    passwordChangedAt: Date,
+
+    passwordResetToken:String,
+    passwordResetExpires:Date
 })
 
 
@@ -69,7 +73,7 @@ userSchema.methods.changedPasswordAt = function(JWTtimestamp){
     // this entire block functions to check if JWTtimeStamp is older than the 
     // password changed at property
     if (this.passwordChangedAt) {
-        // mongoose stores dates ax strings .this varaible converts
+        // mongoose stores dates as strings .this varaible converts
         //the string to a number using parseInt(), getTime() converts the date which defaults to milliseconds
         //we then convert to seconds by dividing by 1000 and we convert to base 10 as the second arg in the 
         // parseInt function.
@@ -81,6 +85,18 @@ userSchema.methods.changedPasswordAt = function(JWTtimestamp){
     return false
 }
 
+userSchema.methods.createPasswordResetToken = function() {
+    // GENERATE THE RANDOM TOKEN 
+    const resetToken = crypto.randomBytes(32).toString("hex")
+
+    // WE SAVE A HASHED VERSION OF OUR TOKEN INTO OUR DB AND WE COMPARE THE HASHED VERSION TO THE PROVIDED  ONE.
+    //FOR SECURITY ISSUES
+    this.passwordResetToken =  crypto.createHash("sha256").update(resetToken).digest("hex")  ;
+    this.passwordResetExpires = Date.now() + 10 * 60 * 1000 // token expires in 10mins in milliseconds
+    
+    //SEND OUR TOKEN.
+    return resetToken
+}
 
 const User =  mongoose.model("User", userSchema);
 

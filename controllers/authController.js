@@ -85,3 +85,24 @@ exports.restrictRoute =(...roles)=>{
         return next( new AppError( "You can't perform this action!", 403))
     })
 }
+
+exports.forgotPassword = catchAsync(async(request,response,next)=>{
+    // get email from POSTed email address
+    const foundUser = await User.findOne({email:request.body.email})
+
+    //check if user exists
+    if (!foundUser) {
+        return next(new AppError("This user does not exist",404))
+    }
+
+    // generate token
+    const resetToken = foundUser.createPasswordResetToken()
+    
+    // IF WE TURN ON MODEL VALIDATION, OUR PASSWORDS AND OTHER PROPERTIES WE SPECIDFIED TO BE REQUIRED WILL HAVE TO BE BE SUPPLIED
+    //..AND WE DO NOT NEED THAT HERE JUST THE EMAIL OF OUR USER.
+    await foundUser.save({validateBeforeSave: false}) // model validation is not neccessary here. we newed to save our token into our DB
+    next()
+})
+exports.resetPassword = catchAsync(async(request,response,next)=>{
+
+})
