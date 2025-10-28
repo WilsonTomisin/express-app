@@ -30,7 +30,11 @@ tourRouter.route("/monthly-statistics/:year").get(getMonthlyStats)
 tourRouter.route('/').get( protectRoute, getAllTours).post(
     // validateTourMiddleware,
     createTour )
-tourRouter.route('/:id').get(getTour).patch(updateTour).delete(protectRoute,restrictRoute("admin","lead-guide"),deleteTour)
+tourRouter
+  .route('/:id')
+  .get(getTour)
+  .patch(updateTour)
+  .delete(protectRoute, restrictRoute('admin', 'lead-guide'), deleteTour);
 
 
 

@@ -2,10 +2,12 @@ const User = require("../models/userModel")
 const catchAsync = require("../utils/catchAsync");
 const jwt = require("jsonwebtoken");
 const AppError = require("../utils/appError");
-const { promisify} = require("util")
+const { promisify } = require("util");
+const crypto = require("crypto")
+const {sendMail} = require("../utils/email")
 
 
-const signToken = id =>{
+const signToken = (id) =>{
     return jwt.sign( {id}, process.env.JWT_SECRET,{
         expiresIn:process.env.EXPIRES_IN
     })
@@ -57,7 +59,7 @@ exports.protectRoute = catchAsync(async(request,response,next)=>{
         return next(new AppError( "You are not authorized to use this resource.", 401))
     }
     const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET)
-    console.log(decoded)
+    // console.log(decoded)
     // check if the user still exists
     const foundUser = await User.findById(decoded.id)
     if (!foundUser) {
@@ -86,9 +88,13 @@ exports.restrictRoute =(...roles)=>{
     })
 }
 
-exports.forgotPassword = catchAsync(async(request,response,next)=>{
+exports.forgotPassword = catchAsync(async (request, response, next) => {
+    const {email} =  request.body
+    if (!email || email.trim() == '') {
+        return next(new AppError("Provide email address", 400))
+    }
     // get email from POSTed email address
-    const foundUser = await User.findOne({email:request.body.email})
+    const foundUser = await User.findOne({email})
 
     //check if user exists
     if (!foundUser) {
@@ -100,9 +106,62 @@ exports.forgotPassword = catchAsync(async(request,response,next)=>{
     
     // IF WE TURN ON MODEL VALIDATION, OUR PASSWORDS AND OTHER PROPERTIES WE SPECIDFIED TO BE REQUIRED WILL HAVE TO BE BE SUPPLIED
     //..AND WE DO NOT NEED THAT HERE JUST THE EMAIL OF OUR USER.
-    await foundUser.save({validateBeforeSave: false}) // model validation is not neccessary here. we newed to save our token into our DB
-    next()
-})
-exports.resetPassword = catchAsync(async(request,response,next)=>{
+    await foundUser.save({ validateBeforeSave: false  }) // model validation is not neccessary here. we need to save our token into our DB
+    const resetURL = `${request.protocol}://${request.get(
+      'host'
+    )}/api/v1/users/resetPassword/${resetToken}`;
+    const message = `Reset your password by submitting a PATCH request with your new password and confirmd password to this URL: ${resetURL}. Ignore this if not requested.`;
+    
+    // we use a try/catch block beacuse we want to update the data if sending the mail fails
+    try {
+        
+        await sendMail({
+          email: foundUser.email,
+          subject: 'Password reset , token expires in 10mins.',
+          message,
+        });
 
+        return response.status(200).json({
+            status: "success",
+            message: "Reset token sent."
+        })
+    } catch (error) {
+        console.log('Email error:', error);
+
+        foundUser.passwordResetToken = undefined;
+        foundUser.passwordResetExpires = undefined;
+        await foundUser.save({ validateBeforeSave: false });
+
+        return next( new AppError("Something went wrong while sending your email. please try again", 500))
+    }
+    // next()
+})
+exports.resetPassword = catchAsync(async (request, response, next) => {
+    // hash the token from our url param
+    const hashedToken = crypto.createHash('sha256').update(request.params.token).digest('hex')
+
+    // query for the user with this token in our db.
+    const user = await User.findOne({
+      passwordResetToken: hashedToken,
+      passwordResetExpires: { $gt: Date.now() },
+    });
+
+    if (!user) {
+        return next( new AppError('Invalid/Expired token', 400))
+    }
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    user.password = request.body.password;
+    user.confirmPassword = request.body.confirmPassword
+
+    await user.save();
+    // const token = signToken(user._id);
+    response.status(201).json({
+        status: 'success',
+        message:"Password reset successfully."
+    //   token,
+    //   data: {
+    //     user,
+    //   },
+    });
 })

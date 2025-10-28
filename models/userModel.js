@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
-const crypto = require("crypto")
+const crypto = require("crypto");
+const validator = require('validator')
 
 const userSchema = new mongoose.Schema({
     name:{
@@ -13,9 +14,10 @@ const userSchema = new mongoose.Schema({
         required:[true,"please provide a unique email address"],
         lowercase:true,
         validate:{
-            validator:function(val) {
-                return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(val)
-            },
+            validator: validator.isEmail,
+            // function(val) {
+            //     return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(val)
+            // }
             message:"Provide a valid email address."
         }
     },
@@ -54,13 +56,19 @@ const userSchema = new mongoose.Schema({
 // MONGOOSE DOCUMENT MIDDLEWARE
 userSchema.pre("save",async function(next){
     // run this only when password has been modified.
-    if (this.isModified("password")) return next() ;
+    if (!this.isModified("password")) return next() ;
 
     // HASH THE PASSWORD ASYNCHRONOUSLY WITHOUT BLOCKING THE EVENT LOOP HENCE;"await"
     this.password = await bcrypt.hash( this.password, 12)
 
     // DO NOT SAVE INT0 OUR DATABASE
     this.confirmPassword = undefined
+    next()
+})
+userSchema.pre("save", function(next) {
+    if (!this.isModified("password") || this.isNew) return next();
+
+    this.passwordChangedAt = Date.now()
     next()
 })
 

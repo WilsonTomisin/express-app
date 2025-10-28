@@ -41,7 +41,7 @@ exports.getAllTours = catchAsync(async (request,response)=>{
             status: 'success',
             data:{
                 tourCount: allTours.length,
-                page: features.queryString.page *1 || 1,
+                page: features.queryString.page * 1 || 1,
                 allTours
             }
         })
