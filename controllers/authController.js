@@ -12,18 +12,27 @@ const signToken = (id) =>{
         expiresIn:process.env.EXPIRES_IN
     })
 }
+
+function sendUserResponse({ user, statusCode, message, response}) {
+    const token = signToken(user._id);
+    response.status(statusCode).json({
+      status: 'success',
+      message,
+      token,
+      data: {
+        user,
+      },
+    });
+}
 exports.signUp = catchAsync( async(request,response, next)=>{
     const {name, email,password,confirmPassword, passwordChangedAt, role} = request.body
         const newUser = await User.create({name,email,password,confirmPassword,passwordChangedAt,role});
         await newUser.save()
-
-        const token = signToken(newUser._id)
-        response.status(201).json({
-            status:"success",
-            token,
-            data:{
-                user:newUser
-            }
+    sendUserResponse({
+        response,
+        message: 'Account created successfully',
+        statusCode: 201,
+        user:newUser
         })
 })
 
@@ -41,11 +50,12 @@ exports.login = catchAsync(async(request,response,next)=>{
     if (!foundUser || ! await foundUser.correctPassword(password, foundUser.password)) {
         return next(new AppError("Invalid credentials", 401))
     }
-    const token = signToken(foundUser._id)
 
-    response.status(200).json({
-        status:"success",
-        token
+    sendUserResponse({
+        response, 
+        statusCode: 200,
+        message: "success",
+        user: foundUser
     })
 })
 
@@ -155,13 +165,36 @@ exports.resetPassword = catchAsync(async (request, response, next) => {
     user.confirmPassword = request.body.confirmPassword
 
     await user.save();
-    // const token = signToken(user._id);
-    response.status(201).json({
-        status: 'success',
-        message:"Password reset successfully."
-    //   token,
-    //   data: {
-    //     user,
-    //   },
+    sendUserResponse({
+      response,
+      statusCode: 201,
+      message: 'Password reset successfully.',
+      user,
     });
+})
+
+exports.updatePassword = catchAsync(async (request, response, next) => {
+    const { current_password, password, confirmPassword } = request.body;
+    if (!current_password || current_password.trim() === '' || !password || password.trim() === '') {
+        return next(new AppError("Provide your current and new password", 400))
+    }
+    const foundUser = await User.findById(request.user._id).select("+password");
+    if (!foundUser) {
+      return next(new AppError('User does not exist', 404));
+    }
+    const isPasswordCorrect = await foundUser.correctPassword(current_password, foundUser.password);
+    if (!isPasswordCorrect) {
+        return next( new AppError("Current Password is not correct", 401))
+    }
+    foundUser.password = password;
+    foundUser.confirmPassword = confirmPassword;
+    await foundUser.save();
+   
+    sendUserResponse({
+      response,
+      statusCode: 201,
+      message: 'Password updated successfully.',
+      user:foundUser,
+    });
+
 })
