@@ -47,9 +47,13 @@ const userSchema = new mongoose.Schema({
         }
     },
     passwordChangedAt: Date,
-
     passwordResetToken:String,
-    passwordResetExpires:Date
+    passwordResetExpires: Date,
+    active: {
+        type: Boolean,
+        default: true,
+        select: false
+    }
 })
 
 
@@ -72,6 +76,14 @@ userSchema.pre("save", function(next) {
     next()
 })
 
+
+// Query middleware to filter out inactive users. the /^find/ regex applies this to all find queries or all methods that start with find
+userSchema.pre(/^find/, function (next) {
+    // this points to the current query
+    //NB:  we use $ne operator to select all documents where active is not equal to false beacause some documents might not have the active property at all. Soo "this.find({ active: true })" would not work as expected.
+    this.find({ active: { $ne: false } });
+    next();
+})
 // In mongoose we can define methods on our SCHEMA (userSchema in this case) class
 userSchema.methods.correctPassword = async function(candidatePassword, userPassword){
     return await bcrypt.compare(candidatePassword,userPassword)

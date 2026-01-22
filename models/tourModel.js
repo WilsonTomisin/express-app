@@ -64,7 +64,7 @@ const tourSchema = new mongoose.Schema({
     images: [String],
     createdAt:{
         type:Date,
-        default: Date.now(), // monogo automatically parsed it to a readable string
+        default: Date.now(), // mongo automatically parsed it to a readable string
         select:false // does not return this porperty anytime a request is made.
     },
     startDates: [Date]

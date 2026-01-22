@@ -37,7 +37,7 @@ exports.getAllTours = catchAsync(async (request,response)=>{
         const allTours = await features.query // only when have performed all of our methods can we await it's execution.
 
 
-        response.status(200).json({
+        return response.status(200).json({
             status: 'success',
             data:{
                 tourCount: allTours.length,

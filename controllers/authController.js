@@ -27,7 +27,9 @@ function sendUserResponse({ user, statusCode, message, response}) {
 exports.signUp = catchAsync( async(request,response, next)=>{
     const {name, email,password,confirmPassword, passwordChangedAt, role} = request.body
         const newUser = await User.create({name,email,password,confirmPassword,passwordChangedAt,role});
-        await newUser.save()
+    await newUser.save()
+    
+
     sendUserResponse({
         response,
         message: 'Account created successfully',
