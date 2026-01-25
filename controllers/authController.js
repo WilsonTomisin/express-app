@@ -13,8 +13,18 @@ const signToken = (id) =>{
     })
 }
 
-function sendUserResponse({ user, statusCode, message, response}) {
+function createToken({ user, statusCode, message, response}) {
     const token = signToken(user._id);
+    // .ENV variables are stored as strings convert to number here
+    const days = parseInt(process.env.COOKIE_EXPIRES_IN, 10)
+    response.cookie('jwt', token, {
+      expires: new Date(
+        Date.now() +
+          days * 24 * 60 * 60 * 1000,
+      ),
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production' ? true : false,
+    });
     response.status(statusCode).json({
       status: 'success',
       message,
@@ -26,11 +36,21 @@ function sendUserResponse({ user, statusCode, message, response}) {
 }
 exports.signUp = catchAsync( async(request,response, next)=>{
     const {name, email,password,confirmPassword, passwordChangedAt, role} = request.body
-        const newUser = await User.create({name,email,password,confirmPassword,passwordChangedAt,role});
-    await newUser.save()
+        const newUser = await User.create({
+          name,
+          email,
+          password,
+          confirmPassword,
+          passwordChangedAt,
+          role,
+        });
+    //.create is a document write method meaning it will bypass the select:false in our schema and return all the information  soo we manually set it to undefined
+    newUser.password = undefined;
+    newUser.active = undefined;
+    // await newUser.save(). we do not need to save again .create() already saves to the DB
     
 
-    sendUserResponse({
+    createToken({
         response,
         message: 'Account created successfully',
         statusCode: 201,
@@ -53,7 +73,7 @@ exports.login = catchAsync(async(request,response,next)=>{
         return next(new AppError("Invalid credentials", 401))
     }
 
-    sendUserResponse({
+    createToken({
         response, 
         statusCode: 200,
         message: "success",
@@ -63,9 +83,15 @@ exports.login = catchAsync(async(request,response,next)=>{
 
 exports.protectRoute = catchAsync(async(request,response,next)=>{
 
-    let token ;
+    let token;
+    //For Mobile apps and other API clients( e.g POSTMAN)
     if (request.headers.authorization && request.headers.authorization.startsWith("Bearer")) {
       token = request.headers.authorization.split(" ")[1]
+    }
+
+    //  For web applications using cookies
+    if ( !token && request.cookies?.jwt) {
+        token = request.cookies.jwt
     }
     if (!token) {
         return next(new AppError( "You are not authorized to use this resource.", 401))
@@ -167,7 +193,7 @@ exports.resetPassword = catchAsync(async (request, response, next) => {
     user.confirmPassword = request.body.confirmPassword
 
     await user.save();
-    sendUserResponse({
+    createToken({
       response,
       statusCode: 201,
       message: 'Password reset successfully.',
@@ -192,7 +218,7 @@ exports.updatePassword = catchAsync(async (request, response, next) => {
     foundUser.confirmPassword = confirmPassword;
     await foundUser.save();
    
-    sendUserResponse({
+    createToken({
       response,
       statusCode: 201,
       message: 'Password updated successfully.',

@@ -56,7 +56,6 @@ const userSchema = new mongoose.Schema({
     }
 })
 
-
 // MONGOOSE DOCUMENT MIDDLEWARE
 userSchema.pre("save",async function(next){
     // run this only when password has been modified.
@@ -69,13 +68,13 @@ userSchema.pre("save",async function(next){
     this.confirmPassword = undefined
     next()
 })
+
 userSchema.pre("save", function(next) {
     if (!this.isModified("password") || this.isNew) return next();
 
     this.passwordChangedAt = Date.now() -1000 // token might have been issued before this document is saved soo to be safe we take away a second from when the document is saved.
     next()
 })
-
 
 // Query middleware to filter out inactive users. the /^find/ regex applies this to all find queries or all methods that start with find
 userSchema.pre(/^find/, function (next) {
@@ -84,6 +83,7 @@ userSchema.pre(/^find/, function (next) {
     this.find({ active: { $ne: false } });
     next();
 })
+
 // In mongoose we can define methods on our SCHEMA (userSchema in this case) class
 userSchema.methods.correctPassword = async function(candidatePassword, userPassword){
     return await bcrypt.compare(candidatePassword,userPassword)

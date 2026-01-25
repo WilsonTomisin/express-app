@@ -4,6 +4,7 @@ const tourRouter = require('./routes/tourRoutes')
 const userRouter = require('./routes/userROutes');
 const AppError = require('./utils/appError');
 const globalErrorHandler = require("./controllers/errorController") 
+const cookieParser = require('cookie-parser');
 const app = express();
 
 
@@ -19,6 +20,7 @@ app.use(express.json()) // this middleware helps to parse incoming json from our
 //     next(); // this is very important as it ensures we proceed in the req-res cycle after a request has been made and the middeleware called
 // })
 
+app.use( cookieParser() ) // to parse cookies from incoming requests
 
 app.use((request,response,next)=>{
     request.time = new Date().toLocaleString()

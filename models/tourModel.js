@@ -65,7 +65,7 @@ const tourSchema = new mongoose.Schema({
     createdAt:{
         type:Date,
         default: Date.now(), // mongo automatically parsed it to a readable string
-        select:false // does not return this porperty anytime a request is made.
+        select:false // does not return this porperty anytime a query request is made.
     },
     startDates: [Date]
 },{
