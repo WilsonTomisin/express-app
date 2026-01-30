@@ -88,12 +88,15 @@ exports.login = catchAsync(async(request,response,next)=>{
 
     //find user
     const foundUser = await User.findOne({email}).select("+password") // since password is not returned as we defined in our schema we have to select it
-
+    
     // check if credentials are valid
     if (!foundUser || ! await foundUser.correctPassword(password, foundUser.password)) {
         return next(new AppError("Invalid credentials", 401))
     }
-    foundUser.password = undefined
+    foundUser.password = undefined;
+    if ( foundUser.active === false) {
+        return next(new AppError("This account is no longer active", 401))
+    }
     createToken({
         response, 
         statusCode: 200,
