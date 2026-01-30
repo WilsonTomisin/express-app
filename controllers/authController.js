@@ -35,14 +35,13 @@ function createToken({ user, statusCode, message, response}) {
     });
 }
 exports.signUp = catchAsync( async(request,response, next)=>{
-    const {name, email,password,confirmPassword, passwordChangedAt, role} = request.body
+    const {name, email,password,confirmPassword, passwordChangedAt} = request.body
         const newUser = await User.create({
           name,
           email,
           password,
           confirmPassword,
           passwordChangedAt,
-          role,
         });
     //.create is a document write method meaning it will bypass the select:false in our schema and return all the information  soo we manually set it to undefined
     newUser.password = undefined;
@@ -57,6 +56,28 @@ exports.signUp = catchAsync( async(request,response, next)=>{
         user:newUser
         })
 })
+exports.signUpAdminOrGuide = catchAsync(async (request, response, next) => {
+    const { name, email, password, confirmPassword, passwordChangedAt, role } = request.body
+        const newUser = await User.create({
+          name,
+          email,
+          password,
+          confirmPassword,
+            passwordChangedAt,
+          role
+        });
+    //.create is a document write method meaning it will bypass the select:false in our schema and return all the information  soo we manually set it to undefined
+    newUser.password = undefined;
+    newUser.active = undefined;
+    // await newUser.save(). we do not need to save again .create() already saves to the DB
+    
+
+    createToken({
+        response,
+        message: 'Account created successfully',
+        statusCode: 201,
+        user:newUser
+        }) })
 
 exports.login = catchAsync(async(request,response,next)=>{
     const {email, password} = request.body

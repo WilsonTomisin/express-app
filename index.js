@@ -2,6 +2,7 @@ const express = require('express');
 const morgan = require("morgan") // returns request values
 const tourRouter = require('./routes/tourRoutes')
 const userRouter = require('./routes/userROutes');
+const reviewRouter = require('./routes/reviewRoutes');
 const AppError = require('./utils/appError');
 const globalErrorHandler = require("./controllers/errorController") 
 const cookieParser = require('cookie-parser');
@@ -66,7 +67,8 @@ app.use((request,response,next)=>{
 
 // MOUNTING OUR ROUTERS ; middle-ware for handling our requests.
 app.use("/api/v1/tours", tourRouter);
-app.use("/api/v1/users",userRouter)
+app.use("/api/v1/users", userRouter)
+app.use("/api/v1/reviews", reviewRouter)
 
 // END ROUTE DEFINITIONS
 

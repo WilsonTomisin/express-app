@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const { create } = require('./userModel');
 
 
 const reviewSchema = new mongoose.Schema({
@@ -26,6 +25,10 @@ const reviewSchema = new mongoose.Schema({
         ref: "User",
         required: [true, "Review must belong to a user"]
     }
+},{
+    toJSON:{virtuals:true},
+    toObject:{virtuals:true}
 })
 
-const Review = mongoose.model("Review", reviewSchema)
+const Review = mongoose.model("Review", reviewSchema);
+module.exports = Review
