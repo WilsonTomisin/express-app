@@ -80,7 +80,9 @@ userSchema.pre("save", function(next) {
 userSchema.pre(/^find/, function (next) {
     // this points to the current query
     //NB:  we use $ne operator to select all documents where active is not equal to false beacause some documents might not have the active property at all. Soo "this.find({ active: true })" would not work as expected.
-    this.find({ active: { $ne: false } });
+    this.find({ active: { $ne: false } }).select("-__v -passwordChangedAt");
+
+    
     next();
 })
 

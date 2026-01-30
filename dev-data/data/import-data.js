@@ -5,21 +5,13 @@
 
 
 const fs = require("fs")
-const dotenv = require("dotenv")
-dotenv.config({path:"./../../.env.local"})
-const mongoose = require("mongoose");
 const Tour = require("./../../models/tourModel")
+const DB = require("./../../server")
 
-const DB = process.env.DB_HOST.replace("<db_password>", process.env.DB_PASSWORD) 
 
 
-mongoose.connect(DB).then( () =>{
-    console.log(`Connected to our database`)
-}).catch( (err)=>{
-    console.log(`An error occured:${err}`)
-})
 // read our file
-const tours = JSON.parse( fs.readFileSync( `${__dirname}/tours-simple.json`, "utf8")); // necessary to import data into our database.
+const tours = JSON.parse( fs.readFileSync( `${__dirname}/tours.json`, "utf8")); // necessary to import data into our database.
 
 
 const importData = async()=>{

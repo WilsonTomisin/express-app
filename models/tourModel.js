@@ -1,4 +1,5 @@
 const mongoose = require("mongoose")
+const User = require("./userModel")
 
 const tourSchema = new mongoose.Schema({
     name:{
@@ -67,11 +68,59 @@ const tourSchema = new mongoose.Schema({
         default: Date.now(), // mongo automatically parsed it to a readable string
         select:false // does not return this porperty anytime a query request is made.
     },
-    startDates: [Date]
+    startDates: [Date],
+    startLocation: {
+        type: {
+            type:String,
+            default:"Point",
+            enum:["Point"]
+        },
+        coordinates: [Number],
+        address: String,
+        description: String
+    },
+    locations: [    
+        {
+        type: {
+            type:String,
+            default:"Point",
+            enum:["Point"]
+        },
+        coordinates: [Number],
+        address: String,
+        description: String,
+        day: Number 
+
+        }],
+    guides: [
+        {
+            type:mongoose.Schema.Types.ObjectId, //  this means that the  guide field only accepts mongoose object ids.
+            ref:"User"
+        }
+    ]
 },{
     toJSON:{virtuals:true},
     toObject:{virtuals:true}
 })
+
+// tourSchema.pre('save', async function (next) {
+//     const guidesPromise = this.guides.map(async id => await User.findById(id))
+//     this.guides = await Promise.all(guidesPromise)
+//     // console.log("will save document...")
+//     next()
+// }) working but commented out to avoid populating guides every time a tour is created.
+
+// QUERY MIDDLEWARE
+tourSchema.pre(/^find/, function (next) {
+    this.select('-__v -passwordChangedAt');
+    this.populate({ 
+        path: "guides",
+        // select: "-__v "
+    })
+    next()
+})
+
+
 
 tourSchema.virtual("durationWeeks").get(function() {
     return this.duration / 7

@@ -18,7 +18,7 @@ if (!process.env.DB_HOST || !process.env.DB_PASSWORD) {
     500,
   );
 }
-const DB = process.env.DB_HOST.replace(
+ const DB = process.env.DB_HOST.replace(
   '<db_password>',
   process.env.DB_PASSWORD,
 );
@@ -43,3 +43,5 @@ process.on('unhandledRejection', (err) => {
 
   // return
 });
+
+module.exports = DB

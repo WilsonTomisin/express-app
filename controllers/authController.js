@@ -72,7 +72,7 @@ exports.login = catchAsync(async(request,response,next)=>{
     if (!foundUser || ! await foundUser.correctPassword(password, foundUser.password)) {
         return next(new AppError("Invalid credentials", 401))
     }
-
+    foundUser.password = undefined
     createToken({
         response, 
         statusCode: 200,

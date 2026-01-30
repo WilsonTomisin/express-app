@@ -40,13 +40,14 @@ exports.deleteMe = catchAsync(async (request, response, next) => {
     });
 });
 
-exports.getAllUsers = (request, response) => {
-    response.status(200).send({
-        status:"success",
-        data:' <getting all users..>'
-    })
+exports.getAllUsers = catchAsync(async (request, response) => {
 
-}
+  const allUsers = await User.find()
+  response.status(200).send({
+    status: 'success',
+    data: allUsers,
+  });
+});
 exports.createUser = (request, response)=>{
     response.status(201).send({
         status:"success",
